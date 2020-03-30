@@ -7,5 +7,5 @@ spring:
 
 statistics:
   window:
-    size: 60
-    interval.millis: 1_000
+    size: 120
+    interval.millis: 500

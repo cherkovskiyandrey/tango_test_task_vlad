@@ -23,6 +23,9 @@ import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+
+//TODO: it would be better to have separated unit test for StatisticsSlidingWindow
+//TODO: too few tests: edge cases?
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class MainUseCaseTest {

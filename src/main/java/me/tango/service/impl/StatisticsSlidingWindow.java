@@ -17,9 +17,10 @@ import java.util.concurrent.ConcurrentSkipListSet;
 @Component
 public class StatisticsSlidingWindow {
 
+    //TODO: window could be cycle buffer what more effective
     private final Map<Long, TransactionStatistics> window = new ConcurrentHashMap<>();
     private final Map<Long, List<TransactionDto>> intervalToSortedTransactions = new ConcurrentHashMap<>();
-    private final NavigableSet<Long> aggregationKeysStream = new ConcurrentSkipListSet<>();
+    private final NavigableSet<Long> aggregationKeysStream = new ConcurrentSkipListSet<>(); //TODO: redundant data structure, absolute time could be along with TransactionStatistics in window
 
     @Value("${statistics.window.interval.millis}")
     private int aggregationIntervalDurationMillis;
@@ -39,9 +40,9 @@ public class StatisticsSlidingWindow {
 
     public TransactionStatistics getWindowStatistics() {
         var currentMillis = System.currentTimeMillis();
-        lastWindowFetchedExclusiveLowerBound = currentMillis - windowIntervalsCount * aggregationIntervalDurationMillis;
+        lastWindowFetchedExclusiveLowerBound = currentMillis - windowIntervalsCount * aggregationIntervalDurationMillis; //TODO: actually race could be here
 
-        var currentAggregationSecond = currentMillis - currentMillis % aggregationIntervalDurationMillis;
+        var currentAggregationSecond = currentMillis - currentMillis % aggregationIntervalDurationMillis; //TODO: why not just davide 1000
         var boundaryAggregationSecondWithActualData = currentAggregationSecond - (windowIntervalsCount - 1) * aggregationIntervalDurationMillis;
         var lastMinuteStatisticsBySecond = getIntervalStatistics(currentAggregationSecond, boundaryAggregationSecondWithActualData);
 
@@ -54,7 +55,7 @@ public class StatisticsSlidingWindow {
 
     public void processNewTransaction(TransactionDto transaction) {
         var currentTimeMillis = System.currentTimeMillis();
-        var currentAggregationSecond = currentTimeMillis - currentTimeMillis % aggregationIntervalDurationMillis;
+        var currentAggregationSecond = currentTimeMillis - currentTimeMillis % aggregationIntervalDurationMillis; //TODO: InMs
         var transactionAggregationSecond = transaction.getTimestamp() - transaction.getTimestamp() % aggregationIntervalDurationMillis;
 
         if (isTransactionOutOfWindow(currentAggregationSecond, transactionAggregationSecond)) {
@@ -64,6 +65,8 @@ public class StatisticsSlidingWindow {
         if (aggregationKeysStream.add(transactionAggregationSecond)) {
             removeStaleTransactions(currentAggregationSecond);
         }
+        //TODO: your memory is going to blow up under high load where amount of events during conciliation interval will be a lot.
+        //In this case aggregation result in one second seems to be enough
         putTransactionWithinSortedRangeAtInterval(transaction, transactionAggregationSecond);
 
         var statisticsDelta = TransactionStatistics.builder()
